@@ -182,17 +182,31 @@ static NSWindow *window = 0;
     assert([NSThread isMainThread]);
 
     Event *event = (Event *)[(NSValue *)idEvent pointerValue];
-    RPC *rpc = event->rpc;
 
-    if (rpc) {
-        if (rpc->callback)
-            rpc->callback(rpc->get_value(), rpc->get_error());
+    switch (event->type)
+    {
+        case Event::Response:
+        {
+            RPC *rpc = event->rpc;
 
-        delete rpc;
-    }
+            if (rpc->callback)
+                rpc->callback(rpc->get_value(), rpc->get_error());
 
-    if (!event->note.empty()) {
-        [self notified:event->note withData:event->note_arg];
+            delete rpc;
+            break;
+        }
+
+        case Event::Note:
+        {
+            [self notified:event->name withData:event->args];
+            break;
+        }
+
+        case Event::Request:
+        {
+            vim->respond(*event, "Poontang");
+            break;
+        }
     }
 }
 

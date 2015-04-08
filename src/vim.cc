@@ -23,10 +23,10 @@ Event Vim::wait()
         Event event = Client::wait();
 
         /* Redraw events with no instructions */
-        if (event.note == "redraw") {
-            if (event.note_arg.type != msgpack::type::ARRAY)
+        if (event.name == "redraw") {
+            if (event.args.type != msgpack::type::ARRAY)
                 continue;
-            if (event.note_arg.via.array.size == 0)
+            if (event.args.via.array.size == 0)
                 continue;
         }
 
