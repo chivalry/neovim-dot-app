@@ -45,21 +45,19 @@
         CGContextSaveGState(mCanvasContext);
         [self updateScale];
 
+        /* Used to draw runs of text */
+        mTextAttrs = [[NSMutableDictionary dictionaryWithObjectsAndKeys:
+            mForegroundColor, NSForegroundColorAttributeName,
+            mBackgroundColor, NSBackgroundColorAttributeName,
+            nil
+        ] retain];
+
         /* Load font from saved settings */
         NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
         NSFont *font = [NSFont fontWithName:[defaults stringForKey:@"fontName"]
                                        size:[defaults floatForKey:@"fontSize"]];
-        [font retain];
         [self setFont:font];
 
-        mTextAttrs = [[NSMutableDictionary dictionaryWithObjectsAndKeys:
-            mForegroundColor, NSForegroundColorAttributeName,
-            mBackgroundColor, NSBackgroundColorAttributeName,
-            mFont, NSFontAttributeName,
-            nil
-        ] retain];
-
-        [[NSFontManager sharedFontManager] setSelectedFont:mFont isMultiple:NO];
         [[NSFontManager sharedFontManager] setDelegate:self];
 
         [self updateCharSize];
@@ -115,11 +113,20 @@
     mCharSize = [@" " sizeWithAttributes:mTextAttrs];
 }
 
+- (void)setBackupFont:(NSString *)fontName
+{
+    [mBackupFontFamily autorelease];
+    mBackupFontFamily = fontName;
+    [mBackupFontFamily retain];
+    mVim->vim_command("redraw!");
+}
+
 - (void)setFont:(NSFont *)font
 {
-    [mBoldFont release];
-    [mItalicFont release];
-    [mBoldItalicFont release];
+    [mFont autorelease];
+    [mBoldFont autorelease];
+    [mItalicFont autorelease];
+    [mBoldItalicFont autorelease];
 
     mFont = font;
 
@@ -130,23 +137,24 @@
     mBoldItalicFont = [man convertFont:font
                            toHaveTrait:NSBoldFontMask | NSItalicFontMask];
 
+    [mFont retain];
     [mBoldFont retain];
     [mItalicFont retain];
     [mBoldItalicFont retain];
-}
 
-- (void)changeFont:(id)sender
-{
-    [self setFont:[sender convertFont:mFont]];
-
-    //update user defaults with new font
+    // update user defaults with new font
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setObject:mFont.fontName forKey:@"fontName"];
     [defaults setFloat:mFont.pointSize forKey:@"fontSize"];
 
+    // inform the manager
+    [[NSFontManager sharedFontManager] setSelectedFont:mFont isMultiple:NO];
+
+    // update text attrs & char cell
     [mTextAttrs setValue:mFont forKey:NSFontAttributeName];
     [self updateCharSize];
 
+    // update frame size
     NSWindow *win = [self window];
     NSRect frame = [win frame];
     frame = [win contentRectForFrameRect:frame];
@@ -155,7 +163,13 @@
     frame = [win frameRectForContentRect:frame];
     [win setFrame:frame display:NO];
 
+    // do this
     mVim->vim_command("redraw!");
+}
+
+- (void)changeFont:(id)sender
+{
+    [self setFont:[sender convertFont:mFont]];
 }
 
 - (void)cutText

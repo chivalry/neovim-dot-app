@@ -38,7 +38,6 @@ using msgpack::object;
 
         for(int i=0; i<update_o.via.array.size; i++) {
 
-
             const object &item_o = update_o.via.array.ptr[i];
 
             if (debug) std::cout << item_o << "\n";
@@ -86,14 +85,31 @@ using msgpack::object;
 
     if (code == RedrawCode::put) {
         static std::string run;
+        static std::string backup_run;
         run.clear();
+        backup_run.clear();
+
+        NSCharacterSet *charset = [mFont coveredCharacterSet];
 
         for (int i=1; i<item_sz; i++) {
             const object &arglist = item_o.via.array.ptr[i];
 
             assert(arglist.via.array.size == 1);
             const object &char_o = arglist.via.array.ptr[0];
-            run += char_o.as<std::string>();
+
+            std::string char_str = char_o.convert();
+
+            NSString *nsChar = [NSString stringWithUTF8String:char_str.c_str()];
+
+            if ([charset characterIsMember:[nsChar characterAtIndex:0]])
+                run += char_str;
+            else if (mBackupFontFamily) {
+                run += ' ';
+                backup_run += char_str;
+            }
+            else {
+                run += '?';
+            }
         }
 
         NSString *nsrun = [NSString stringWithUTF8String:run.c_str()];
@@ -104,6 +120,27 @@ using msgpack::object;
         NSRect rect = [self viewRectFromCellRect:cellRect];
 
         [nsrun drawAtPoint:rect.origin withAttributes:mTextAttrs];
+
+        if (!backup_run.empty()) {
+
+            // Take the current font we're using
+            NSFont *font = [mTextAttrs objectForKey:NSFontAttributeName];
+
+            // Get the backup font at the same size, weight, etc.
+            NSFontManager *man = [NSFontManager sharedFontManager];
+            NSFont *backupFont =
+                [man convertFont:font toFamily:mBackupFontFamily];
+
+            // Draw backup run using that font and no bg colour.
+            NSMutableDictionary *backupAttrs =
+                [NSMutableDictionary dictionaryWithDictionary:mTextAttrs];
+            [backupAttrs setValue:backupFont forKey:NSFontAttributeName];
+            [backupAttrs removeObjectForKey:NSBackgroundColorAttributeName];
+
+            nsrun = [NSString stringWithUTF8String:backup_run.c_str()];
+
+            [nsrun drawAtPoint:rect.origin withAttributes:backupAttrs];
+        }
 
         mCursorPos.x += sz;
     }

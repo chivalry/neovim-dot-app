@@ -29,9 +29,11 @@ class Vim;
     NSFont *mBoldFont;
     NSFont *mItalicFont;
     NSFont *mBoldItalicFont;
+
+    NSString *mBackupFontFamily;
 }
 
-- (BOOL)insertOrProbablyCommandMode;
+- (id)initWithCellSize:(CGSize)cellSize vim:(Vim *)vim;
 
 - (void)cutText;
 - (void)copyText;
@@ -41,7 +43,10 @@ class Vim;
 
 - (void)requestResize:(CGSize)cellSize;
 
-- (id)initWithCellSize:(CGSize)cellSize vim:(Vim *)vim;
+- (void)setFont:(NSFont *)font;
+- (void)setBackupFont:(NSString *)fontName;
+
+- (BOOL)insertOrProbablyCommandMode;
 
 - (NSPoint)cellContaining:(NSPoint)viewPoint;
 - (NSRect)viewRectFromCellRect:(NSRect)cellRect;

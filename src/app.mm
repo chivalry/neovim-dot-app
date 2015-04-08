@@ -138,11 +138,23 @@ static NSWindow *window = 0;
     assert([NSThread isMainThread]);
 
     if (note == "redraw") {
-
         /* There must be a better way of finding out when the current buffer
            has changed? Until we figure one out, update title every redraw. */
         [self updateWindowTitle];
         [mainView redraw:update_o];
+    }
+    else if (note == "set-font") {
+        std::string name = update_o.via.array.ptr[0].convert();
+        NSString *nsName = [NSString stringWithUTF8String:name.c_str()];
+        float size = update_o.via.array.ptr[1].convert();
+
+        NSFont *font = [NSFont fontWithName:nsName size:size];
+        [mainView setFont:font];
+    }
+    else if (note == "set-backup-font") {
+        std::string name = update_o.via.array.ptr[0].convert();
+        NSString *nsName = [NSString stringWithUTF8String:name.c_str()];
+        [mainView setBackupFont:nsName];
     }
     else {
         std::cout << "Unknown note " << note << "\n";
