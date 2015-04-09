@@ -93,6 +93,12 @@ static NSWindow *window = 0;
        https://github.com/neovim/neovim/pull/1927 is merged */
     setenv("VIM", [vimDir UTF8String], 1);
     setenv("NVIM", [vimDir UTF8String], 1);
+
+    /* Since Vim is also a terminal emulator these days, it'll be useful to
+       have the right locale set. */
+    NSString* locale = [[NSLocale currentLocale] localeIdentifier];
+    setenv("LC_ALL", [locale UTF8String], 1);
+
     vim = new Vim([vimPath UTF8String]);
     vim->ui_attach(width, height, true);
 
